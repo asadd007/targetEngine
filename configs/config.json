@@ -1,0 +1,7 @@
+{
+  "port": 8080,
+  "log_level": "info",
+  "enable_metrics": true,
+  "metrics_port": 9090,
+  "enable_health_check": true
+} 
