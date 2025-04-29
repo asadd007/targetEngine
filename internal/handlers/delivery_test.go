@@ -14,34 +14,25 @@ import (
 )
 
 func TestServeHTTP(t *testing.T) {
-	// Skip if not running integration tests
 	if os.Getenv("RUN_INTEGRATION_TESTS") != "true" {
 		t.Skip("Skipping integration test. Set RUN_INTEGRATION_TESTS=true to run.")
 	}
-
-	// Get PostgreSQL connection string from environment
 	postgresURI := os.Getenv("POSTGRES_URI")
 	if postgresURI == "" {
 		postgresURI = "postgres://postgres:postgres@localhost:5432/targeting_engine_test?sslmode=disable"
 	}
-
-	// Create PostgreSQL repository
 	ctx := context.Background()
 	repo, err := repository.NewPostgresRepository(ctx, postgresURI)
 	if err != nil {
 		t.Fatalf("Failed to connect to PostgreSQL: %v", err)
 	}
 	defer repo.Close(ctx)
-
-	// Initialize test data
 	if err := repo.InitTestData(ctx); err != nil {
 		t.Fatalf("Failed to initialize test data: %v", err)
 	}
 
-	// Create the service
 	targetingService := service.NewTargetingService(repo)
 
-	// Test cases
 	tests := []struct {
 		name           string
 		url            string
@@ -93,38 +84,26 @@ func TestServeHTTP(t *testing.T) {
 		},
 	}
 
-	// Run tests
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			// Create a handler with the service
 			handler := NewDeliveryHandler(targetingService)
-
-			// Create a request
 			req, err := http.NewRequest(tc.method, tc.url, nil)
 			if err != nil {
 				t.Fatalf("Failed to create request: %v", err)
 			}
-
-			// Create a response recorder
 			rr := httptest.NewRecorder()
-
-			// Call the handler
 			handler.ServeHTTP(rr, req)
 
-			// Check status code
 			if rr.Code != tc.expectedStatus {
 				t.Errorf("Expected status code %d but got %d", tc.expectedStatus, rr.Code)
 			}
 
-			// Check content type for JSON responses
 			if tc.expectJSON {
 				contentType := rr.Header().Get("Content-Type")
 				if contentType != "application/json" {
 					t.Errorf("Expected Content-Type application/json but got %s", contentType)
 				}
 			}
-
-			// Check body for 200 responses
 			if tc.expectedStatus == http.StatusOK {
 				var campaigns []models.CampaignResponse
 				if err := json.NewDecoder(rr.Body).Decode(&campaigns); err != nil {
