@@ -1,0 +1,34 @@
+version: '3'
+
+services:
+  # Our ad targeting app
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"  # Make the app available on port 8080
+    environment:
+      - DB_TYPE=postgres  # Use PostgreSQL for storage
+      - POSTGRES_URI=postgres://postgres:postgres@postgres:5432/targeting_engine?sslmode=disable
+      - DB_NAME=targeting_engine
+    depends_on:
+      - postgres  # Wait for PostgreSQL to start
+    restart: unless-stopped  # Keep running unless we stop it
+
+  # PostgreSQL database
+  postgres:
+    image: postgres:14
+    ports:
+      - "5432:5432"  # Make PostgreSQL available on port 5432
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=targeting_engine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Keep data between restarts
+    restart: unless-stopped  # Keep running unless we stop it
+
+# Keep database data between restarts
+volumes:
+  postgres_data: 
